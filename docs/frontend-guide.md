@@ -202,19 +202,42 @@ export default function App() {
 
 **목표:** 프론트에서 `GET /users`를 호출해 콘솔에 찍기
 
-**만들 파일:** `.env`, `src/api/client.js`, `src/api/users.js`
+**만들 파일:** `vite.config.js`(프록시 추가), `src/api/client.js`, `src/api/users.js`
 
-```bash
-# .env  (Vite는 VITE_ 로 시작하는 변수만 코드에 노출함)
-VITE_API_URL=http://localhost:8000
+먼저 **프록시**를 설정합니다. 브라우저가 백엔드(8000)를 직접 부르지 않고, 지금 열려 있는 프론트 서버(5173)에 `/api/...`로 요청하면 Vite가 대신 백엔드로 전달해 줍니다.
+
+```
+브라우저 ──/api/users──▶ Vite(5173) ──/users──▶ FastAPI(8000)
 ```
 
 ```js
+// vite.config.js
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),   // /api/users → /users
+      },
+    },
+  },
+});
+```
+
+> **왜 프록시를 쓰나요?** 브라우저에서 `http://localhost:8000`을 직접 부르면 두 가지 문제가 생길 수 있습니다.
+> ① 포트가 다르면 출처가 달라서 **CORS** 설정이 필요합니다.
+> ② WSL·원격 개발처럼 서버와 브라우저가 다른 환경에 있으면 8000 포트가 브라우저에서 **안 보일 수 있습니다.**
+> 이 프로젝트도 실제로 Windows 브라우저에서 "서버에 연결할 수 없습니다"가 떠서 프록시로 바꿨습니다.
+
+```js
 // src/api/client.js: 처음엔 이 정도로 시작
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+// (Vite는 VITE_ 로 시작하는 환경 변수만 코드에 노출함. 비워두면 "/api" 프록시 사용)
+export const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 export async function request(path, { method = "GET", body, query } = {}) {
-  const url = new URL(path, API_URL);
+  const url = new URL(API_URL + path, window.location.origin);   // "/api" + "/users"
   if (query) Object.entries(query).forEach(([k, v]) => v != null && url.searchParams.set(k, v));
 
   const res = await fetch(url, {
@@ -249,12 +272,13 @@ export default function App() {
 
 **확인:**
 1. 브라우저 개발자도구(F12) → **Console** 탭에 사용자 배열이 찍히나요?
-2. **Network** 탭에서 `users` 요청을 클릭해 Headers / Response를 보세요. **이 탭과 친해지는 것이 API 연동 디버깅의 전부입니다.**
+2. **Network** 탭에서 `users` 요청을 클릭해 Headers / Response를 보세요. 요청 주소가 `5173/api/users`인지 확인하세요. **이 탭과 친해지는 것이 API 연동 디버깅의 전부입니다.**
+3. 브라우저 주소창에 `http://localhost:5173/api/health`를 직접 쳐 보세요. `{"status":"ok"}`가 나오면 프록시가 동작하는 것입니다.
 
 **자주 하는 실수:**
-- `.env`를 고친 뒤 `npm run dev`를 재시작하지 않음 → env는 시작할 때만 읽습니다
-- 콘솔에 **CORS 에러** → 백엔드가 다른 주소(5173 → 8000) 요청을 막은 것. 이 프로젝트는 백엔드 [main.py](../backend/app/main.py)에서 전체 허용해 두었습니다
-- `Failed to fetch` → 백엔드가 꺼져 있음
+- `vite.config.js`나 `.env`를 고친 뒤 반영이 안 됨 → `npm run dev`를 재시작하세요
+- `/api/...` 요청이 **500 / 502** → 프록시는 동작하지만 백엔드(8000)가 꺼져 있음
+- `.env`에 `VITE_API_URL=http://localhost:8000`을 넣어 직접 호출했는데 **CORS 에러**나 `Failed to fetch` → 백엔드 CORS 설정이나 포트 접근 문제. 프록시 방식으로 돌아가세요
 - 콘솔에 같은 요청이 **두 번** 찍힘 → 개발 모드의 `StrictMode`가 일부러 effect를 두 번 실행합니다. 버그 아님
 
 **더 나아가기:** 완성본 [api/client.js](../frontend/src/api/client.js)는 여기에 ① 서버가 꺼졌을 때 메시지, ② 422 검증 에러 배열 → 문자열 변환, ③ `status` 코드를 담은 `ApiError`를 추가했습니다. 비교해 보세요.
@@ -512,8 +536,9 @@ start_at: `${form.date}T${form.start}:00`     // → "2026-10-07T14:00:00"
 
 | 증상 | 원인 | 해결 |
 |---|---|---|
-| `Failed to fetch` / "서버에 연결할 수 없습니다" | 백엔드 꺼짐, 주소 틀림 | uvicorn 실행 확인, `.env`의 `VITE_API_URL` 확인 |
-| CORS 에러 | 백엔드가 출처를 허용하지 않음 | 백엔드 CORS 설정 확인 |
+| "서버에 연결할 수 없습니다" | 브라우저가 API 주소에 닿지 못함 | `.env`의 `VITE_API_URL`을 비워 프록시 사용, `npm run dev` 재시작 |
+| `/api/...`가 500·502 | 프록시는 OK, 백엔드가 꺼짐 | uvicorn 실행 확인 (`localhost:5173/api/health`로 점검) |
+| CORS 에러 | 백엔드를 직접 호출하는데 출처가 허용되지 않음 | 프록시 사용, 또는 백엔드 CORS 설정 확인 |
 | 422 Unprocessable | body 형식·타입이 스키마와 다름 | Network → Payload와 `/docs`의 스키마 비교 (숫자를 문자열로 보내는 경우가 흔함) |
 | 403 | 요청한 `user_id`가 방장/본인이 아님 | 헤더의 현재 사용자 확인 |
 | 화면이 안 바뀜 | state를 안 바꿨거나 재조회를 안 함 | `setXxx` 호출, 액션 후 `load()` 확인 |

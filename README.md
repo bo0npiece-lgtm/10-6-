@@ -30,9 +30,9 @@
 │   ├── requirements-dev.txt
 │   └── pytest.ini
 └── frontend/
-    ├── .env.example           # VITE_API_URL=http://localhost:8000
+    ├── .env.example           # VITE_API_URL (비워두면 /api 프록시 사용)
     ├── index.html
-    ├── vite.config.js
+    ├── vite.config.js         # dev 서버 프록시: /api → http://127.0.0.1:8000
     └── src/
         ├── main.jsx           # 진입점 (Router + AppProvider)
         ├── App.jsx            # 라우트 정의
@@ -63,7 +63,7 @@ uvicorn app.main:app --reload
 ```bash
 # 2) 프론트엔드: http://localhost:5173
 cd frontend
-cp .env.example .env      # 백엔드 주소가 다르면 수정
+cp .env.example .env      # 기본값(프록시) 그대로 두면 됨
 npm install
 npm run dev
 ```
@@ -78,8 +78,13 @@ cd backend && pytest      # 백엔드 테스트
 
 ### API 연결 방식
 
-- 프론트는 `VITE_API_URL`(기본값 `http://localhost:8000`)로 백엔드를 **직접** 호출합니다.
-- 백엔드는 CORS를 전체 허용하도록 설정되어 있습니다 ([main.py](backend/app/main.py)).
+```
+브라우저 ──/api/studies──▶ Vite dev 서버(5173) ──/studies──▶ FastAPI(8000)
+```
+- 프론트는 같은 출처의 `/api/...`로 요청하고, [vite.config.js](frontend/vite.config.js)의 **프록시**가 백엔드로 전달합니다.
+  - 브라우저는 5173 포트만 알면 됩니다. Windows 브라우저와 WSL 서버처럼 환경이 나뉘어 있어도 동작합니다.
+  - 같은 출처 요청이라 CORS 문제가 없습니다.
+- 백엔드를 직접 호출하고 싶으면 `.env`에 `VITE_API_URL=http://localhost:8000`을 지정하세요. 이 방식을 위해 백엔드 CORS도 전체 허용해 두었습니다 ([main.py](backend/app/main.py)).
 - 에러가 나면 FastAPI의 `{"detail": "..."}` 응답을 [client.js](frontend/src/api/client.js)가 `ApiError`로 바꿔 던지고, 화면에서는 toast로 보여줍니다. 422 검증 에러 배열도 메시지로 변환합니다.
 - 백엔드가 꺼져 있으면 "서버에 연결할 수 없습니다" toast가 뜹니다.
 
