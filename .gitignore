@@ -1,4 +1,14 @@
+# Python
 .venv/
 __pycache__/
 *.pyc
-app.db
+*.db
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+.env
+
+# 로컬 설정
+.claude/

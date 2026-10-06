@@ -1,25 +1,10 @@
 import enum
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, create_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
-DATABASE_URL = "sqlite:///./app.db"
-
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
-
-KST = ZoneInfo("Asia/Seoul")
-
-
-def now_kst() -> datetime:
-    """모든 시간은 KST naive datetime으로 통일한다."""
-    return datetime.now(KST).replace(tzinfo=None, microsecond=0)
-
-
-class Base(DeclarativeBase):
-    pass
+from app.database import Base, now_kst
 
 
 class StudyStatus(str, enum.Enum):

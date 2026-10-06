@@ -2,7 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from models import KST, ApplicationStatus, MemberRole, ReservationStatus, StudyStatus
+from app.database import KST
+from app.models import ApplicationStatus, MemberRole, ReservationStatus, StudyStatus
 
 
 class ORM(BaseModel):
@@ -70,6 +71,14 @@ class ApplicationOut(ORM):
     message: str
     status: ApplicationStatus
     created_at: datetime
+
+
+class ApplicationWithUser(ApplicationOut):
+    nickname: str
+
+
+class MyApplicationOut(ApplicationOut):
+    study_title: str
 
 
 # ---------- Owner transfer ----------
