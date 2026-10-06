@@ -180,7 +180,7 @@ db.scalars(select(Study).where(Study.status == StudyStatus.RECRUITING))
 
 ##### ③ API 명세 (가장 중요 ⭐)
 엔드포인트마다 **메서드, 경로, 요청 body, 응답 예시, 에러 상황**을 표로 정합니다.
-이 프로젝트 [README의 API 목록](../README.md#api-목록)이 바로 그 결과물입니다.
+이 프로젝트 [README의 API 문서](../README.md#api-문서-swagger)가 바로 그 결과물입니다. 이 프로젝트는 FastAPI가 만든 Swagger 스펙에서 자동 생성합니다 (`backend/scripts/export_openapi.py`).
 
 ```
 POST /studies/{id}/applications

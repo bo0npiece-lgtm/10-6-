@@ -10,6 +10,24 @@ class ORM(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ---------- Error (문서용) ----------
+class ErrorOut(BaseModel):
+    detail: str = Field(examples=["방장만 할 수 있는 작업입니다."])
+
+
+_ERROR_DESC = {
+    400: "규칙 위반",
+    403: "권한 없음 (방장/본인 아님)",
+    404: "리소스 없음",
+    409: "중복/충돌",
+}
+
+
+def errors(*codes: int) -> dict:
+    """라우터의 responses= 에 넣어 Swagger에 에러 응답을 표시한다."""
+    return {c: {"model": ErrorOut, "description": _ERROR_DESC[c]} for c in codes}
+
+
 # ---------- User ----------
 class UserCreate(BaseModel):
     nickname: str = Field(min_length=1, max_length=50, examples=["철수"])
