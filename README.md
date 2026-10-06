@@ -8,7 +8,9 @@
 | backend | Python 3.12, FastAPI, SQLAlchemy 2, SQLite, Pydantic v2, pytest |
 | frontend | Vite, React 19, react-router 7, fetch (추가 라이브러리 없음) |
 
-> 📘 프론트엔드를 처음부터 직접 만들어 보며 배우려면 [프론트엔드 길라잡이](docs/frontend-guide.md)를 따라가세요.
+> 📘 처음 배우는 분을 위한 안내서
+> - [백엔드 길라잡이](docs/backend-guide.md): 백엔드 기초, 팀이 정할 것과 백엔드가 할 일, 코드 읽기, 기능 추가 실습
+> - [프론트엔드 길라잡이](docs/frontend-guide.md): 프론트엔드를 처음부터 직접 만들어 보며 배우기
 
 ## 디렉토리 구조
 
